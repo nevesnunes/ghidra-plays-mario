@@ -39,7 +39,7 @@ To reproduce the first level run:
 3. Copy `./ghidra_scripts/NesEmu.java` to your project's `ghidra_scripts` directory;
 4. Copy `./inputs/smb.w11full.inputs` to `/tmp/smb.inputs`;
 5. On Ghidra's Window > Script Manager, run `NesEmu.java` (starts the server);
-6. Run `make && ./smolnes_emuclt $ROM`, (starts the client, `$ROM` is the full path to the same ROM being disassembled in Ghidra); 
+6. Run `make && ./smolnes_emuclt $ROM`, (starts the client, `$ROM` is the full path to the same ROM being disassembled in Ghidra);
 7. Sit back and enjoy an ~1 FPS demo;
 
 Of course, you can remove `/tmp/smb.inputs` and play yourself.
@@ -49,3 +49,8 @@ Of course, you can remove `/tmp/smb.inputs` and play yourself.
 * As seen in the demo, Ghidra is constantly re-analyzing functions, caused by [frantic clearing and disassembling of instructions](https://github.com/nevesnunes/ghidra-plays-mario/blob/master/ghidra_scripts/NesEmu.java#L557). Not much room to improve here, since only disassembled instructions can be executed.
 * I've run into some desync when recording inputs in the standalone emulator vs replaying them in Ghidra's emulator. This means that inputs likely end up being set at different instruction lines. Expect diffs in e.g. how many VBlank interrupts happen when comparing both CPU emulators' trace logs... Still, it wasn't bad enough to break the demo, please let me know if that's not the case for you.
 * Currently, the protocol is very hardcoded for NES implementation details, and would benefit from a proper [TLV encoding](https://en.wikipedia.org/wiki/Type%E2%80%93length%E2%80%93value) to handle variable address / data sizes.
+
+## Acknowledgements
+
+* `deobfuscated.c` from [smolnes](https://github.com/binji/smolnes) is under [LICENSE.smolnes](./LICENSE.smolnes), and was modified into files `smolnes_emuclt.c` and `smolnes_standalone.c`;
+* Remaining files are under [LICENSE](./LICENSE);
