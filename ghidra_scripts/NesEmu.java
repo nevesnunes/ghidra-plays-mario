@@ -6,8 +6,10 @@
 //@toolbar
 
 import java.util.Arrays;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.DataOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -252,6 +254,7 @@ public class NesEmu extends GhidraScript {
 			Map.entry(0xFE, new Cycles(7, EMUSRV_ADD.NONE))
 	);
 	
+	private byte buf[];
 	private InputStream input;
 	private OutputStream output;
 	
@@ -268,12 +271,12 @@ public class NesEmu extends GhidraScript {
 				//println(String.format("hook w@%04x=%02x size=%d", off, values[0], size));
 				
 				try {
-					output.write(new byte[] {
-							(byte) EMUSRV_PROTO.RAM_W.v,
-							(byte) ((off & 0xff00) >> 8),
-							(byte) ((off & 0xff)),
-							values[0],
-					});
+					buf[0] = (byte) EMUSRV_PROTO.RAM_W.v;
+					buf[1] = (byte) ((off & 0xff00) >> 8);
+					buf[2] = (byte) ((off & 0xff));
+					buf[3] = values[0];
+					output.write(buf, 0, 4);
+					output.flush();
 					
 					while (!monitor.isCancelled()) {
 						int reqType = clientRead();
@@ -285,8 +288,10 @@ public class NesEmu extends GhidraScript {
 							a |= clientRead();
 							byte[] code = new byte[n];
 							emu.getMemState().getChunk(code, addr(a).getAddressSpace(), a, n, false);
-							output.write(new byte[] {(byte) EMUSRV_PROTO.CLT_RES_R.v});
+							buf[0] = (byte) EMUSRV_PROTO.CLT_RES_R.v;
+							output.write(buf, 0, 1);
 							output.write(code);
+							output.flush();
 							break;
 						case RES_W:
 							return;
@@ -309,11 +314,11 @@ public class NesEmu extends GhidraScript {
 				//println(String.format("hook r@%04x size=%d", off, size));
 				
 				try {
-					output.write(new byte[] {
-							(byte) EMUSRV_PROTO.RAM_R.v,
-							(byte) ((off & 0xff00) >> 8),
-							(byte) ((off & 0xff)),
-					});
+					buf[0] = (byte) EMUSRV_PROTO.RAM_R.v;
+					buf[1] = (byte) ((off & 0xff00) >> 8);
+					buf[2] = (byte) ((off & 0xff));
+					output.write(buf, 0, 3);
+					output.flush();
 					
 					int resType = input.read();
 					switch (EMUSRV_PROTO.of(resType)) {
@@ -342,9 +347,12 @@ public class NesEmu extends GhidraScript {
 		println("Starting server...");
 		ServerSocket server = new ServerSocket(6502);
 		Socket socket_r = server.accept();
+		socket_r.setTcpNoDelay(true);
 		Socket socket_w = server.accept();
+		socket_w.setTcpNoDelay(true);
 		input = socket_w.getInputStream();
-		output = socket_r.getOutputStream();
+		output = new DataOutputStream(new BufferedOutputStream(socket_r.getOutputStream()));
+		buf = new byte[0x10];
 
 		println("Emulating...");
 		try {
@@ -355,10 +363,10 @@ public class NesEmu extends GhidraScript {
 					// If we have recorded inputs at this instruction line, send them 
 					// to the client, overriding what it reads from the keyboard.
 					if (inputs.containsKey(line_i)) {
-						output.write(new byte[] {
-								(byte) EMUSRV_PROTO.INPUTS_W.v,
-								inputs.get(line_i).byteValue()
-						});
+						buf[0] = (byte) EMUSRV_PROTO.INPUTS_W.v;
+						buf[1] = inputs.get(line_i).byteValue();
+						output.write(buf, 0, 2);
+						output.flush();
 					}
 					
 					prevPC = cpu.readRegister("PC").longValue();
@@ -371,34 +379,36 @@ public class NesEmu extends GhidraScript {
 					}
 					
 					// Tell client to proceed (will execute PPU logic before requesting the next CPU step).
-					int cycles = cycles(cpu, prevPC);
-					output.write(new byte[] {
-							(byte) EMUSRV_PROTO.RUN.v,
-							(byte) ((cpu.readRegister("PC").intValue() & 0xff00) >> 8),
-							(byte) ((cpu.readRegister("PC").intValue() & 0xff)),
-							cpu.readRegister("A").byteValue(),
-							cpu.readRegister("X").byteValue(),
-							cpu.readRegister("Y").byteValue(),
-							cpu.readRegister("S").byteValue(),
-							(byte) flags(cpu),
-							(byte) cycles,
-					});
+					buf[0] = (byte) EMUSRV_PROTO.RUN.v;
+					buf[1] = (byte) ((cpu.readRegister("PC").intValue() & 0xff00) >> 8);
+					buf[2] = (byte) ((cpu.readRegister("PC").intValue() & 0xff));
+					buf[3] = cpu.readRegister("A").byteValue();
+					buf[4] = cpu.readRegister("X").byteValue();
+					buf[5] = cpu.readRegister("Y").byteValue();
+					buf[6] = cpu.readRegister("S").byteValue();
+					buf[7] = (byte) flags(cpu);
+					buf[8] = (byte) cycles(cpu, prevPC);
+					output.write(buf, 0, 9);
+					output.flush();
 					
 					line_i++;
+					if (line_i % 1000000 == 0) {
+						println(String.format("Passed line=%d", line_i));
+					}
 					break;
 				case INT:
 					handleHardwareInt(cpu);
 
-					output.write(new byte[] {
-							(byte) ((cpu.readRegister("PC").intValue() & 0xff00) >> 8),
-							(byte) ((cpu.readRegister("PC").intValue() & 0xff)),
-							cpu.readRegister("A").byteValue(),
-							cpu.readRegister("X").byteValue(),
-							cpu.readRegister("Y").byteValue(),
-							cpu.readRegister("S").byteValue(),
-							(byte) flags(cpu),
-							(byte) 7,
-					});
+					buf[0] = (byte) ((cpu.readRegister("PC").intValue() & 0xff00) >> 8);
+					buf[1] = (byte) ((cpu.readRegister("PC").intValue() & 0xff));
+					buf[2] = cpu.readRegister("A").byteValue();
+					buf[3] = cpu.readRegister("X").byteValue();
+					buf[4] = cpu.readRegister("Y").byteValue();
+					buf[5] = cpu.readRegister("S").byteValue();
+					buf[6] = (byte) flags(cpu);
+					buf[7] = (byte) 7;
+					output.write(buf, 0, 8);
+					output.flush();
 					break;
 				default:
 					println(String.format("Unknown type=%02x", reqType));

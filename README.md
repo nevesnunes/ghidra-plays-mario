@@ -46,9 +46,17 @@ Of course, you can remove `/tmp/smb.inputs` and play yourself.
 
 ## Takeaways
 
-* As seen in the demo, Ghidra is constantly re-analyzing functions, caused by [frantic clearing and disassembling of instructions](https://github.com/nevesnunes/ghidra-plays-mario/blob/master/ghidra_scripts/NesEmu.java#L557). Not much room to improve here, since only disassembled instructions can be executed.
+* As seen in the demo, Ghidra is constantly re-analyzing functions, caused by [frantic clearing and disassembling of instructions](https://github.com/nevesnunes/ghidra-plays-mario/blob/fce8d25afb0a2a37870ddbafffea9880e74f81df/ghidra_scripts/NesEmu.java#L557). Not much room to improve here, since only disassembled instructions can be executed.
 * I've run into some desync when recording inputs in the standalone emulator vs replaying them in Ghidra's emulator. This means that inputs likely end up being set at different instruction lines. Expect diffs in e.g. how many VBlank interrupts happen when comparing both CPU emulators' trace logs... Still, it wasn't bad enough to break the demo, please let me know if that's not the case for you.
 * Currently, the protocol is very hardcoded for NES implementation details, and would benefit from a proper [TLV encoding](https://en.wikipedia.org/wiki/Type%E2%80%93length%E2%80%93value) to handle variable address / data sizes.
+
+## Profiling
+
+Some flamegraphs were captured with async-profiler: `./asprof -e itimer -d 30 -o flamegraph -f /tmp/out.html $GHIDRA_PID`
+
+Surprisingly, stepping through instructions only takes about 15% of CPU time. About 50% is socket I/O (even after some quick optimizations like reusing the same buffer for payloads and buffering socket writes):
+
+![](./flamegraphs/smb_buffered_w.png)
 
 ## Acknowledgements
 

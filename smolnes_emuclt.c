@@ -170,7 +170,6 @@ int emusrv_connect(in_port_t port){
 	if(connect(fd, (struct sockaddr *)&addr, sizeof(struct sockaddr_in)) == -1){
 		perror("connect");
 		exit(1);
-
 	}
 	return fd;
 }
