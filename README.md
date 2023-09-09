@@ -34,13 +34,14 @@ Tested with Ghidra 10.3.2, on Debian GNU/Linux 12.
 
 To reproduce the first level run:
 
-1. Install [GhidraNes](https://github.com/kylewlacy/GhidraNes) (tested with commit `ef27b8d`);
-2. Load a Super Mario Bros (World) ROM (sha1 `ea343f4e445a9050d4b4fbac2c77d0693b1d0922`), and make sure it's focused in the listing (a.k.a. disassembly) window (in case you have other files open);
-3. Copy `./ghidra_scripts/NesEmu.java` to your project's `ghidra_scripts` directory;
-4. Copy `./inputs/smb.w11full.inputs` to `/tmp/smb.inputs`;
-5. On Ghidra's Window > Script Manager, run `NesEmu.java` (starts the server);
-6. Run `make && ./smolnes_emuclt $ROM`, (starts the client, `$ROM` is the full path to the same ROM being disassembled in Ghidra);
-7. Sit back and enjoy an ~1 FPS demo;
+1. Copy `Ghidra/Processors/6502/data/languages/*.slaspec` from [my fork](https://github.com/nevesnunes/ghidra/tree/fix-6502-ops) to your Ghidra installation, then run `ant -f build.xml` under `data/` to build the updated `.sla` files;
+2. Install [GhidraNes](https://github.com/kylewlacy/GhidraNes) (tested with commit `ef27b8d`);
+3. Load a Super Mario Bros (World) ROM (sha1 `ea343f4e445a9050d4b4fbac2c77d0693b1d0922`), and make sure it's focused in the listing (a.k.a. disassembly) window (in case you have other files open);
+4. Copy `./ghidra_scripts/NesEmu.java` to your project's `ghidra_scripts` directory;
+5. Copy `./inputs/smb.w11full.inputs` to `/tmp/smb.inputs`;
+6. On Ghidra's Window > Script Manager, run `NesEmu.java` (starts the server);
+7. Run `make && ./smolnes_emuclt $ROM`, (starts the client, `$ROM` is the full path to the same ROM being disassembled in Ghidra);
+8. Sit back and enjoy an ~1 FPS demo;
 
 Of course, you can remove `/tmp/smb.inputs` and play yourself.
 
