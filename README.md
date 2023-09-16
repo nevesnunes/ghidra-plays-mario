@@ -59,6 +59,10 @@ Surprisingly, stepping through instructions only takes about 15% of CPU time. Ab
 
 ![](./flamegraphs/smb_buffered_w.png)
 
+## Related work
+
+* [afl\_ghidra\_emu](https://github.com/airbus-cyber/afl_ghidra_emu) has a similar socket-based architecture, but applied to fuzzing (Ghidra [receives input data](https://github.com/airbus-cyber/afl_ghidra_emu/blob/61ef2ceaa1f3ceff830481e54e3213e8091810cb/afl_bridge_external/afl_bridge_external.c#L543) and [sends coverage results](https://github.com/airbus-cyber/afl_ghidra_emu/blob/61ef2ceaa1f3ceff830481e54e3213e8091810cb/libAFL/libAFL.py#L305) back to AFL++);
+
 ## Acknowledgements
 
 * `deobfuscated.c` from [smolnes](https://github.com/binji/smolnes) is under [LICENSE.smolnes](./LICENSE.smolnes), and was modified into files `smolnes_emuclt.c` and `smolnes_standalone.c`;
